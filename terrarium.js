@@ -47,12 +47,14 @@ Grid.prototype.moveValue = function(from, to) {
 };
 Grid.prototype.each = function(action) {
 	var point = new Point(0, 0);
-	for (var i = this.cells.length - 1; i >= 0; i--) {
-		point.x = i % this.width;
-		point.y = Math.floor(i / this.width);
-		if(this.valueAt(point) !== undefined)
+	for (var x = 0; x < this.width; ++x) {
+		for (var y = 0; y < this.height; ++y) {
+			point.x = x;
+			point.y = y;
+
 			action(point, this.valueAt(point))
-	};
+		}
+	}
 };
 
 var testGrid = new Grid(3, 2);
