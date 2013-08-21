@@ -103,3 +103,61 @@ var directions = new Dictionary({
 });
 
 //console.log(new Point(4, 4).add(directions.lookup("se")));
+
+
+function StupidBug() {};
+StupidBug.prototype.act = function(surroundings) {
+	return {type: "move", direction: "s"};
+};
+
+var wall = {};
+
+function Terrarium(plan) {
+	var grid = new Grid(plan[0].length, plan.length);
+	for (var y = 0; y < plan.length; y++) {
+		var line = plan[y];
+		for (var x = 0; x < line.length; x++) {
+			grid.setValueAt(new Point(x, y),
+				elementFromCharacter(line.charAt(x)));
+		};
+	};
+	this.grid = grid;
+}
+
+function elementFromCharacter(character) {
+	if (character == " ") 
+		return undefined;
+	else if (character == "#")
+		return wall;
+	else if (character == "o")
+		return new StupidBug();
+}
+
+wall.character = "#";
+StupidBug.prototype.character = "o";
+
+function characterFromElement(element) {
+	if (element == undefined)
+		return " ";
+	else
+		return element.character;
+}
+
+// console.log(characterFromElement(wall));
+// console.log(characterFromElement());
+// console.log(characterFromElement(new StupidBug()));
+
+
+Terrarium.prototype.toString = function() {
+	var output = [];
+	var endOfLine = this.grid.width - 1;
+	this.grid.each(function(point, value) {
+		output.push(characterFromElement(value));
+		if (point.x == endOfLine)
+			output.push("\n");
+	})
+	return output.join("");
+};
+
+var terrarium = new Terrarium(thePlan);
+console.log(terrarium.toString());
