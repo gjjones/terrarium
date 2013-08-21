@@ -73,8 +73,8 @@ Grid.prototype.moveValue = function(from, to) {
 };
 Grid.prototype.each = function(action) {
 	var point = new Point(0, 0);
-	for (var x = 0; x < this.width; ++x) {
-		for (var y = 0; y < this.height; ++y) {
+	for (var y = 0; y < this.height; ++y) {
+		for (var x = 0; x < this.width; ++x) {
 			point.x = x;
 			point.y = y;
 
