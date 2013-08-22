@@ -161,3 +161,31 @@ Terrarium.prototype.toString = function() {
 
 var terrarium = new Terrarium(thePlan);
 console.log(terrarium.toString());
+
+
+Terrarium.prototype.listActingCreatures = function() {
+	var found = [];
+	this.grid.each(function(point, value) {
+		if (value != undefined && value.act)
+			found.push({object: value, point: point});
+	});
+	return found;
+};
+
+
+Terrarium.prototype.listSurroundings = function(origin) {
+	var result = {};
+
+	var grid = this.grid;
+	directions.each(function(direction, offset) {
+		var point = origin.add(offset);
+		if (grid.isInside(point))
+			result[direction] = characterFromElement(grid.valueAt(point));
+		else
+			result[direction] = "#";
+	});
+
+	return result;
+};
+
+console.log(terrarium.listSurroundings(new Point(1, 1)));
