@@ -5,6 +5,12 @@ function forEachIn(object, action) {
 	}
 }
 
+function bind(func, object) {
+  return function(){
+    return func.apply(object, arguments);
+  };
+}
+
 function Dictionary(startValues) {
 	this.values = startValues || {};
 }
@@ -160,14 +166,15 @@ Terrarium.prototype.toString = function() {
 };
 
 var terrarium = new Terrarium(thePlan);
-console.log(terrarium.toString());
+//console.log(terrarium.toString());
 
 
 Terrarium.prototype.listActingCreatures = function() {
 	var found = [];
 	this.grid.each(function(point, value) {
-		if (value != undefined && value.act)
-			found.push({object: value, point: point});
+		if (value != undefined && value.act) {
+			found.push({object: value, point: new Point(point.x, point.y)});
+		}
 	});
 	return found;
 };
@@ -188,4 +195,53 @@ Terrarium.prototype.listSurroundings = function(origin) {
 	return result;
 };
 
-console.log(terrarium.listSurroundings(new Point(1, 1)));
+//console.log(terrarium.listSurroundings(new Point(1, 1)));
+
+
+Terrarium.prototype.processCreatures = function(creature) {
+	var surroundings = this.listSurroundings(creature.point);
+	var action = creature.object.act(surroundings);
+	if (action.type == "move" && directions.contains(action.direction)) {
+		var to = creature.point.add(directions.lookup(action.direction));
+		if (this.grid.isInside(to) && this.grid.valueAt(to) == undefined) {
+			this.grid.moveValue(creature.point, to);
+		}
+	}
+	else {
+		throw new Error("Unsupported action: " + action.type);
+	}
+};
+
+
+var stepCount = 0;
+Terrarium.prototype.step = function() {
+	this.listActingCreatures().forEach(bind(this.processCreatures, this));
+	if (this.onStep)
+		this.onStep();
+	
+	if (++stepCount > 5)
+		this.stop();
+};
+Terrarium.prototype.onStep = function() {
+	console.log(this.toString());
+};
+
+// console.log(terrarium.toString());
+// terrarium.step();
+// console.log(terrarium.toString());
+
+
+Terrarium.prototype.start = function() {
+	if (!this.running)
+		this.running = setInterval(bind(this.step, this), 500);
+};
+
+Terrarium.prototype.stop = function() {
+	if (this.running) {
+		clearInterval(this.running);
+		this.running = null;
+	}
+};
+
+terrarium.start();
+
