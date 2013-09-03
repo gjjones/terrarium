@@ -17,6 +17,12 @@ function randomElement(array) {
 	return array[Math.floor(Math.random() * array.length)];
 }
 
+function clone(object) {
+	function OneShotConstructor() {}
+	OneShotConstructor.prototype = object;
+	return new OneShotConstructor();
+}
+
 function Dictionary(startValues) {
 	this.values = startValues || {};
 }
@@ -171,18 +177,6 @@ creatureTypes.register(DrunkBug);
 var wall = {};
 wall.character = "#";
 
-function Terrarium(plan) {
-	var grid = new Grid(plan[0].length, plan.length);
-	for (var y = 0; y < plan.length; y++) {
-		var line = plan[y];
-		for (var x = 0; x < line.length; x++) {
-			grid.setValueAt(new Point(x, y),
-				elementFromCharacter(line.charAt(x)));
-		};
-	};
-	this.grid = grid;
-}
-
 
 function elementFromCharacter(character) {
 	if (character == " ") 
@@ -208,6 +202,18 @@ function characterFromElement(element) {
 // console.log(characterFromElement(new StupidBug()));
 
 
+function Terrarium(plan) {
+	var grid = new Grid(plan[0].length, plan.length);
+	for (var y = 0; y < plan.length; y++) {
+		var line = plan[y];
+		for (var x = 0; x < line.length; x++) {
+			grid.setValueAt(new Point(x, y),
+				elementFromCharacter(line.charAt(x)));
+		};
+	};
+	this.grid = grid;
+}
+
 Terrarium.prototype.toString = function() {
 	var output = [];
 	var endOfLine = this.grid.width - 1;
@@ -219,7 +225,8 @@ Terrarium.prototype.toString = function() {
 	return output.join("");
 };
 
-var terrarium = new Terrarium(planB);
+//var terrarium = new Terrarium(planB);
+//terrarium.start();
 //console.log(terrarium.toString());
 
 
@@ -252,7 +259,7 @@ Terrarium.prototype.listSurroundings = function(origin) {
 //console.log(terrarium.listSurroundings(new Point(1, 1)));
 
 
-Terrarium.prototype.processCreatures = function(creature) {
+Terrarium.prototype.processCreature = function(creature) {
 	var surroundings = this.listSurroundings(creature.point);
 	var action = creature.object.act(surroundings);
 	if (action.type == "move" && directions.contains(action.direction)) {
@@ -269,7 +276,7 @@ Terrarium.prototype.processCreatures = function(creature) {
 
 var stepCount = 0;
 Terrarium.prototype.step = function() {
-	this.listActingCreatures().forEach(bind(this.processCreatures, this));
+	this.listActingCreatures().forEach(bind(this.processCreature, this));
 	if (this.onStep)
 		this.onStep();
 	
@@ -297,5 +304,65 @@ Terrarium.prototype.stop = function() {
 	}
 };
 
-terrarium.start();
+//terrarium.start();
 
+
+function LifeLikeTerrarium(plan) {
+	Terrarium.call(this, plan);
+}
+LifeLikeTerrarium.prototype = clone(Terrarium.prototype);
+LifeLikeTerrarium.prototype.constructor = LifeLikeTerrarium;
+
+LifeLikeTerrarium.prototype.processCreature = function(creature) {
+	if (creature.object.energy <= 0) return;
+	var surroundings = this.listSurroundings(creature.point);
+	var action = creature.object.act(surroundings);
+
+	var target = undefined;
+	var valueAtTarget = undefined;
+	if (action.direction && directions.contains(action.direction)) {
+		var direction = directions.lookup(action.direction);
+		var maybe = creature.point.add(direction);
+		if (this.grid.isInside(maybe)) {
+			target = maybe;
+			valueAtTarget = this.grid.valueAt(target);
+		}
+	}
+
+	if (action.type == "move") {
+		if (target && !valueAtTarget) {
+			this.grid.moveValue(creature.point, target);
+			creature.point = target;
+			creature.object.energy -= 1;
+		}
+	}
+
+	else if (action.type == "photosynthesis") {
+		creature.object.energy += 1;
+	}
+
+	else if (action.type == "reproduce") {
+		if (target && !valueAtTarget) {
+			var species = characterFromElement(creature.object);
+			var baby = elementFromCharacter(species);
+			creature.object.energy -= baby.energy * 2;
+			if (creature.object.energy > 0)
+				this.grid.setValueAt(target, baby);
+		}
+	}
+
+	else if (action.type == "wait") {
+		creature.object.energy -= 0.2;
+	}
+
+	else {
+		throw new Error("Unsupported action: " + action.type);
+	}
+
+	if (creature.object.energy <= 0)
+		this.grid.setValueAt(creature.point, undefined);
+};
+
+
+var terrarium = new LifeLikeTerrarium(planB);
+terrarium.start();
