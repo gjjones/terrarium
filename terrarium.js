@@ -142,6 +142,39 @@ var directions = new Dictionary({
 //console.log(new Point(4, 4).add(directions.lookup("se")));
 
 
+function elementFromCharacter(character) {
+	if (character == " ") 
+		return undefined;
+	else if (character == "#")
+		return wall;
+	else if (creatureTypes.lookup(character))
+		return new (creatureTypes.lookup(character))();
+	else
+		throw new Error("Unknown character: " + character);
+}
+
+
+function characterFromElement(element) {
+	if (element == undefined)
+		return " ";
+	else
+		return element.character;
+}
+
+function findDirections(surroundings, wanted) {
+	var found = [];
+	directions.each(function(name) {
+		if (surroundings[name] == wanted)
+			found.push(name);
+	});
+	return found;
+}
+
+// console.log(characterFromElement(wall));
+// console.log(characterFromElement());
+// console.log(characterFromElement(new StupidBug()));
+
+
 var creatureTypes = new Dictionary();
 creatureTypes.register = function(constructor) {
 	this.store(constructor.prototype.character, constructor);
@@ -173,33 +206,23 @@ DrunkBug.prototype.act = function(surroundings) {
 };
 creatureTypes.register(DrunkBug);
 
+function Lichen() {
+	this.energy = 5;
+}
+Lichen.prototype.character = "*";
+Lichen.prototype.act = function(surroundings) {
+	var emptySpace = findDirections(surroundings, " ");
+	if (this.energy >= 13 && emptySpace.length > 0)
+		return {type: "reproduce", direction: randomElement(emptySpace)};
+	else if (this.energy < 20)
+		return {type: "photosynthese"};
+	else
+		return {type: "wait"};
+};
+creatureTypes.register(Lichen);
 
 var wall = {};
 wall.character = "#";
-
-
-function elementFromCharacter(character) {
-	if (character == " ") 
-		return undefined;
-	else if (character == "#")
-		return wall;
-	else if (creatureTypes.lookup(character))
-		return new (creatureTypes.lookup(character))();
-	else
-		throw new Error("Unknown character: " + character);
-}
-
-
-function characterFromElement(element) {
-	if (element == undefined)
-		return " ";
-	else
-		return element.character;
-}
-
-// console.log(characterFromElement(wall));
-// console.log(characterFromElement());
-// console.log(characterFromElement(new StupidBug()));
 
 
 function Terrarium(plan) {
@@ -337,7 +360,7 @@ LifeLikeTerrarium.prototype.processCreature = function(creature) {
 		}
 	}
 
-	else if (action.type == "photosynthesis") {
+	else if (action.type == "photosynthese") {
 		creature.object.energy += 1;
 	}
 
